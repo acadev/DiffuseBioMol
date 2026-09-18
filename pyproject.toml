@@ -1,0 +1,25 @@
+[build-system]
+requires = ["setuptools>=77"]
+build-backend = "setuptools.build_meta"
+
+[project]
+name = "diffusebiomol"
+version = "0.1.0"
+description = "PyTorch all-atom protein flow-matching training baseline"
+readme = "README.md"
+requires-python = ">=3.12"
+license = "MIT"
+authors = [{name = "acadev"}]
+dependencies = ["torch==2.14.0", "numpy==2.5.3"]
+
+[project.optional-dependencies]
+wandb = ["wandb>=0.17"]
+
+[project.urls]
+Repository = "https://github.com/acadev/DiffuseBioMol"
+
+[project.scripts]
+diffusebiomol-train = "diffusebiomol.train:main"
+
+[tool.setuptools.packages.find]
+where = ["src"]
