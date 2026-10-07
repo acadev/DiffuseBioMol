@@ -1,19 +1,17 @@
 # Data preparation and schema
 
-`examples/smoke-corpus` is ready to use. For more structures, use the existing
-Julia parser/tokenizer to export a local PDB/mmCIF directory:
+`examples/smoke-corpus` is ready to use. Prepare additional local structures
+with the native AtomWorks parser and tokenizer:
 
 ```sh
-# JULIA_PROJECT must be a prepared DiffuseBioMol.jl checkout.
-JULIA_PROJECT=/path/to/DiffuseBioMol.jl
-julia --project="$JULIA_PROJECT" tools/julia/export_python_corpus.jl \
-  /path/to/coordinate-files /path/to/new-export
-python -m diffusebiomol.train /path/to/new-export runs/new-experiment --epochs 10
+diffusebiomol-prepare /path/to/coordinate-files /path/to/new-corpus
+diffusebiomol-train /path/to/new-corpus runs/new-experiment --epochs 10
 ```
 
-The export directory must be new. The exporter selects the largest chain, retains
-the reference atom vocabulary and virtual atoms, reports skipped sources and
-stores only linear-size arrays. Python requires no Julia process during training.
+Use a new output directory. The default selects the largest canonical polymer
+chain. PDB/mmCIF and gzip inputs are supported. See [parser policies](WORKFLOW.md)
+for chain selection, missing atoms, alternate conformers, and residue numbering.
+The checked-in vocabulary fixes categorical IDs, including virtual atom slots.
 
 ## Schema version 1
 
@@ -34,9 +32,8 @@ computed after cropping. A crop with no observed atoms or no residue fitting the
 budget raises an error. This baseline does not include spatial crops or
 sequence-based clustering.
 
-Do not merge independently exported corpora by concatenating manifests: Julia
-vocabulary enumeration may differ between exports. Remap indices using explicit
-vocabularies or export a unified corpus. Source filenames do not detect biological
+Do not merge independently prepared corpora without checking vocabulary and
+parser metadata. Remap indices if necessary, or prepare a unified corpus. Source filenames do not detect biological
 duplicates; deduplication and sequence clustering remain preparation tasks.
 
 The manifest is loaded in memory and one JSON record is opened per source use.
