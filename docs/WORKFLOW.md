@@ -31,9 +31,10 @@ entirely Python. Preparation uses
 [AtomWorks 3.0](https://rosettacommons.github.io/atomworks/latest/) with its minimal
 parser preset and Biotite's bundled CCD. No external CCD/PDB mirror is required.
 
-The default selects the chain with the most canonical polymer residues (ties
-break by chain ID). Use `--chain all` for the asymmetric unit, or `--chain A` for
-one exact parser chain ID. Only the first model and first alternate conformer
+The default writes a separate record for each canonical polymer chain. Use
+`--chain largest` for the single largest chain (ties break by chain ID),
+`--chain all` for the asymmetric unit, or `--chain A` for one exact parser chain
+ID. Use `--workers N` to parallelize parsing across source files. Only the first model and first alternate conformer
 are used; biological assemblies are not expanded. Waters and hydrogens are
 removed. Canonical protein/RNA/DNA residues have fixed atom slots; missing,
 nonfinite, unresolved, or zero-occupancy coordinates are masked and stored as
@@ -66,8 +67,8 @@ Resume currently requires the same device and thread settings as the checkpoint.
 
 ## Outputs and interpretation
 
-- `manifest.json`: exact source split, corpus identity, model/configuration and
-  software versions. The split is source-disjoint, not sequence-clustered.
+- `manifest.json`: exact source or optional sequence-cluster split, corpus
+  identity, model/configuration and software versions.
 - `steps.csv`: cumulative crop presentations, real/padded atoms, loss, host
   loading/preparation, transfer, forward, backward/optimizer timings.
 - `checkpoint.pt`: model, optimizer, objective/configuration, RNG states, epoch,

@@ -87,6 +87,9 @@ class TokenizerTests(unittest.TestCase):
             manifest = prepare_corpus(root, root / "corpus")
             self.assertEqual(len(manifest["entries"]), 4)
             self.assertEqual(len(manifest["skipped"]), 1)
+            parallel = prepare_corpus(root, root / "parallel", workers=2)
+            self.assertEqual(manifest["entries"], parallel["entries"])
+            self.assertEqual(manifest["skipped"], parallel["skipped"])
             corpus = Corpus(root / "corpus")
             crop = corpus.load(0, 1, np.random.default_rng(1))
             self.assertEqual(len(crop["element"]), 4)
@@ -94,6 +97,22 @@ class TokenizerTests(unittest.TestCase):
             self.assertEqual(tuple(collate([crop])["xyz"].shape), (1, 4, 3))
             with self.assertRaises(FileExistsError):
                 prepare_corpus(root, root / "corpus")
+
+    def test_each_chain_preserves_multiple_polymer_chains(self):
+        a = atoms([("A", 1, "", "GLY", "CA", "C", False),
+                   ("B", 1, "", "ALA", "CA", "C", False)])
+        with tempfile.TemporaryDirectory() as tmp:
+            root = Path(tmp)
+            cif = CIFFile(); set_structure(cif, a); cif.write(root / "1abc.cif")
+            manifest = prepare_corpus(root / "1abc.cif", root / "each")
+            self.assertEqual([e["chain"] for e in manifest["entries"]], ["A", "B"])
+            self.assertEqual(len(manifest["entries"]), 2)
+            largest = prepare_corpus(root / "1abc.cif", root / "largest", chain="largest")
+            self.assertEqual(len(largest["entries"]), 1)
+            self.assertEqual(len(largest["entries"][0]["entity_keys"]), 1)
+            whole = prepare_corpus(root / "1abc.cif", root / "all", chain="all")
+            self.assertEqual(len(whole["entries"]), 1)
+            self.assertEqual(whole["entries"][0]["atoms"], 9)
 
     def test_all_failed_writes_diagnostics(self):
         with tempfile.TemporaryDirectory() as tmp:

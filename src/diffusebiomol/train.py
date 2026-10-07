@@ -14,6 +14,7 @@ import torch
 from .data import Corpus, collate
 from .flow import cfm_loss, prepare, sample_flow
 from .model import FlowModel, ModelConfig
+from .split import make_split
 
 
 def synchronize(device):
@@ -52,7 +53,9 @@ def train(corpus_dir, run_dir, *, epochs=3, batch_size=2, max_residues=16,
           max_atoms=None,
           seed=17, learning_rate=0.001, device="cpu", threads=2, resume=False,
           model_config=None, wandb_project=None, wandb_entity=None,
-          wandb_name=None, wandb_mode="online", wandb_upload_checkpoint=False):
+          wandb_name=None, wandb_mode="online", wandb_upload_checkpoint=False,
+          sequence_clusters=None, validation_fraction=0.1,
+          max_validation_sources=1024):
     if int(os.environ.get("WORLD_SIZE", "1")) > 1:
         from .distributed import train_distributed
         return train_distributed(corpus_dir, run_dir, epochs=epochs, batch_size=batch_size,
@@ -60,7 +63,9 @@ def train(corpus_dir, run_dir, *, epochs=3, batch_size=2, max_residues=16,
             learning_rate=learning_rate, device=device, threads=threads, resume=resume,
             model_config=model_config, wandb_project=wandb_project,
             wandb_entity=wandb_entity, wandb_name=wandb_name,
-            wandb_mode=wandb_mode, wandb_upload_checkpoint=wandb_upload_checkpoint)
+            wandb_mode=wandb_mode, wandb_upload_checkpoint=wandb_upload_checkpoint,
+            sequence_clusters=sequence_clusters, validation_fraction=validation_fraction,
+            max_validation_sources=max_validation_sources)
     if min(epochs, batch_size, max_residues, threads) <= 0 or learning_rate <= 0 or (max_atoms is not None and max_atoms <= 0):
         raise ValueError("Epochs, batch size, crop limits, threads and learning rate must be positive")
     dev = torch.device(device)
@@ -76,15 +81,15 @@ def train(corpus_dir, run_dir, *, epochs=3, batch_size=2, max_residues=16,
     corpus = Corpus(corpus_dir)
     if len(corpus.entries) < 3:
         raise ValueError("At least three sources are required")
+    training, validation, split = make_split(corpus, seed,
+        sequence_clusters=sequence_clusters, validation_fraction=validation_fraction,
+        max_validation_sources=max_validation_sources)
     config = model_config or ModelConfig()
-    contract = dict(schema=2, architecture="feature_norm_gelu_time_v1",
+    contract = dict(schema=3, architecture="feature_norm_gelu_time_v1",
         objective="flow_matching", model=asdict(config),
         corpus=corpus.signature, batch_size=batch_size, max_residues=max_residues,
         max_atoms=max_atoms, seed=seed,
-        learning_rate=learning_rate, device=str(dev), threads=threads)
-    order = np.random.default_rng(seed).permutation(len(corpus.entries)).tolist()
-    n_val = max(1, round(0.33 * len(order)))
-    validation, training = order[:n_val], order[n_val:]
+        learning_rate=learning_rate, device=str(dev), threads=threads, split=split)
     root = Path(run_dir)
     if not resume and root.exists():
         raise ValueError("Choose a new run directory or pass --resume")
@@ -279,6 +284,9 @@ def main():
     parser.add_argument("--threads", type=int, default=2)
     parser.add_argument("--resume", action="store_true")
     parser.add_argument("--model-config", help="JSON file containing ModelConfig fields")
+    parser.add_argument("--sequence-clusters", help="RCSB clusters-by-entity text file; requires matching corpus entity keys")
+    parser.add_argument("--validation-fraction", type=float, default=0.1)
+    parser.add_argument("--max-validation-sources", type=int, default=1024)
     parser.add_argument("--wandb-project", help="Enable W&B logging for this project")
     parser.add_argument("--wandb-entity")
     parser.add_argument("--wandb-name")

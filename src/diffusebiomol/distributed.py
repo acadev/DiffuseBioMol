@@ -15,6 +15,7 @@ from torch.nn.parallel import DistributedDataParallel
 from .data import Corpus, collate
 from .flow import cfm_loss, prepare
 from .model import FlowModel, ModelConfig
+from .split import make_split
 from .train import atomic_save, evaluate, start_wandb, synchronize, transfer
 
 
@@ -41,7 +42,8 @@ def restore_rank_state(state, rng, device):
 
 def train_distributed(corpus_dir, run_dir, *, epochs, batch_size, max_residues,
         max_atoms, seed, learning_rate, device, threads, resume, model_config,
-        wandb_project, wandb_entity, wandb_name, wandb_mode, wandb_upload_checkpoint):
+        wandb_project, wandb_entity, wandb_name, wandb_mode, wandb_upload_checkpoint,
+        sequence_clusters, validation_fraction, max_validation_sources):
     if min(epochs, batch_size, max_residues, threads) <= 0 or learning_rate <= 0 or (max_atoms is not None and max_atoms <= 0):
         raise ValueError("Epochs, batch size, crop limits, threads and learning rate must be positive")
     world_size = int(os.environ["WORLD_SIZE"])
@@ -68,15 +70,15 @@ def train_distributed(corpus_dir, run_dir, *, epochs, batch_size, max_residues,
         corpus = Corpus(corpus_dir)
         if len(corpus.entries) < 3:
             raise ValueError("At least three sources are required")
+        training, validation, split = make_split(corpus, seed,
+            sequence_clusters=sequence_clusters, validation_fraction=validation_fraction,
+            max_validation_sources=max_validation_sources)
         config = model_config or ModelConfig()
-        contract = dict(schema=3, architecture="feature_norm_gelu_time_v1",
+        contract = dict(schema=4, architecture="feature_norm_gelu_time_v1",
             objective="flow_matching", model=asdict(config), corpus=corpus.signature,
             batch_size=batch_size, max_residues=max_residues, max_atoms=max_atoms,
             seed=seed, learning_rate=learning_rate, device=requested.type,
-            threads=threads, world_size=world_size)
-        order = np.random.default_rng(seed).permutation(len(corpus.entries)).tolist()
-        n_val = max(1, round(0.33 * len(order)))
-        validation, training = order[:n_val], order[n_val:]
+            threads=threads, world_size=world_size, split=split)
         root = Path(run_dir)
         exists = torch.tensor([int(root.exists()), int((root / "checkpoint.pt").is_file())]
             if rank == 0 else [0, 0], dtype=torch.long, device=dev)

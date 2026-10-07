@@ -72,7 +72,7 @@ class DistributedTrainingTests(unittest.TestCase):
             resumed = torch.load(root / "resumed/checkpoint.pt", weights_only=True)
             for key in ("model", "optimizer", "rank_states", "presentations", "updates"):
                 equal_state(self, full[key], resumed[key])
-            self.assertEqual(full["presentations"], 8)
+            self.assertEqual(full["presentations"], 10)
             self.assertEqual(full["updates"], 4)
             self.assertEqual(len(full["rank_states"]), 3)
 

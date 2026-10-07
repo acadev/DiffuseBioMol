@@ -107,6 +107,26 @@ it has not been validated on a GPU yet. Start with the smaller
 `configs/small.json` if the pilot model cannot complete the correctness check.
 Distributed training is available through `torchrun`; see below.
 
+## Real PDB validation split
+
+Prepare a fresh corpus from mmCIF files so each record has polymer entity keys.
+Download one of the [RCSB sequence-cluster files](https://www.rcsb.org/docs/programmatic-access/file-download-services#sequence-clusters-data)
+alongside the data. For a protein-only corpus, use for example:
+
+```sh
+diffusebiomol-prepare /scratch/pdb-mmcif /scratch/dbm-corpus --workers 8
+diffusebiomol-train /scratch/dbm-corpus runs/clustered-pilot \
+  --sequence-clusters /scratch/clusters-by-entity-30.txt \
+  --max-validation-sources 1024 --device cuda --epochs 3
+```
+
+The split fails if any record lacks cluster coverage, which is preferable to
+silently leaking homologs. Without a cluster file, the split keeps source files
+disjoint but is not a homology holdout. Validation defaults to about 10% of
+records, capped at 1,024, and rank zero evaluates that fixed subset once per
+epoch and again at the end. The fraction, cap, and cluster-file hash are locked
+into the checkpoint resume contract. Older checkpoints need a new run directory.
+
 ## Distributed training
 
 Use `torchrun` with one process per GPU. On one node with four visible GPUs:

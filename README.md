@@ -19,8 +19,9 @@ An existing Python environment can be reused with `python -m pip install -e .`.
 ## Prepare and train
 
 ```sh
-# Parse local PDB/mmCIF files into a new corpus directory.
-diffusebiomol-prepare /path/to/structures runs/corpus
+# Parse local PDB/mmCIF files into a new corpus directory, one polymer chain
+# per record. Increase workers on a CPU node after a small benchmark.
+diffusebiomol-prepare /path/to/structures runs/corpus --workers 8
 
 # Train on residue-counted complete crops; use a new run directory.
 diffusebiomol-train runs/corpus runs/experiment --epochs 10 --max-residues 16 --max-atoms 256 --batch-size 2
@@ -41,7 +42,7 @@ policies, configuration, outputs, and checkpoint compatibility.
 - Pairformer-lite/DiT backbone, linear-path flow-matching objective, polymer
   prior, rotation/centering augmentation, and Euler sampling.
 - FP32 single-device and distributed data-parallel training with residue-counted
-  crops, source-disjoint validation, checksummed corpora, tested CPU resume,
+  crops, source- or sequence-cluster-disjoint validation, checksummed corpora, tested CPU resume,
   diagnostic stage timings, and CUDA memory metrics.
 - CPU, CUDA, and MPS device selection. CPU is validated; accelerator training
   and throughput still require validation on target hardware.

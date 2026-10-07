@@ -118,7 +118,7 @@ class TrainingTests(unittest.TestCase):
                 else:
                     self.assertEqual(x, y)
             equal(a, b)
-            self.assertEqual(a["presentations"], 12)
+            self.assertEqual(a["presentations"], 15)
             with self.assertRaises(ValueError):
                 train(corpus_path, root / "resume", epochs=4, resume=True, max_residues=5)
             corpus = Corpus(corpus_path)
