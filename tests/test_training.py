@@ -65,7 +65,7 @@ class TrainingTests(unittest.TestCase):
         if corpus_path:
             corpus = Corpus(corpus_path)
             self.model = FlowModel(ModelConfig(), corpus.vocab)
-            data = corpus.load(0, 128, np.random.default_rng(2))
+            data = corpus.load(0, 8, np.random.default_rng(2))
         else:
             data = record(16)
         batch = collate([data])
@@ -99,9 +99,9 @@ class TrainingTests(unittest.TestCase):
                                         sha256=hashlib.sha256(raw).hexdigest()))
                 (corpus_path / "manifest.json").write_text(json.dumps(dict(
                     schema_version=1, index_base=0, vocab_sizes=[17,6,20,66], entries=entries)))
-            train(corpus_path, root / "full", epochs=3)
-            train(corpus_path, root / "resume", epochs=2)
-            train(corpus_path, root / "resume", epochs=3, resume=True)
+            train(corpus_path, root / "full", epochs=3, max_residues=4)
+            train(corpus_path, root / "resume", epochs=2, max_residues=4)
+            train(corpus_path, root / "resume", epochs=3, max_residues=4, resume=True)
             a = torch.load(root / "full/checkpoint.pt", weights_only=True)
             b = torch.load(root / "resume/checkpoint.pt", weights_only=True)
             def equal(x, y):
@@ -120,10 +120,10 @@ class TrainingTests(unittest.TestCase):
             equal(a, b)
             self.assertEqual(a["presentations"], 12)
             with self.assertRaises(ValueError):
-                train(corpus_path, root / "resume", epochs=4, resume=True, max_atoms=64)
+                train(corpus_path, root / "resume", epochs=4, resume=True, max_residues=5)
             corpus = Corpus(corpus_path)
-            data = corpus.load(0, 24, np.random.default_rng(4))
-            self.assertLessEqual(len(data["element"]), 24)
+            data = corpus.load(0, 2, np.random.default_rng(4))
+            self.assertLessEqual(len(np.unique(data["residue"])), 2)
             # Every selected residue is complete relative to the full source.
             source = corpus.load(0, 100000, np.random.default_rng(4))
             for residue in np.unique(data["residue"]):
@@ -131,7 +131,32 @@ class TrainingTests(unittest.TestCase):
             corpus.entries = copy.deepcopy(corpus.entries)
             corpus.entries[0]["sha256"] = "bad"
             with self.assertRaises(ValueError):
-                corpus.load(0, 128, np.random.default_rng(2))
+                corpus.load(0, 8, np.random.default_rng(2))
+
+    def test_residue_budget_and_atom_safety_limit(self):
+        with tempfile.TemporaryDirectory() as tmp:
+            root = Path(tmp)
+            groups = [3, 7, 5, 4]
+            r = record(sum(groups))
+            r["residue"] = np.repeat(np.arange(len(groups)), groups)
+            raw = json.dumps({k: v.tolist() for k, v in r.items()}).encode()
+            (root / "source.json").write_bytes(raw)
+            (root / "manifest.json").write_text(json.dumps(dict(schema_version=1,
+                index_base=0, vocab_sizes=[17, 6, 20, 66], entries=[dict(
+                file="source.json", sha256=hashlib.sha256(raw).hexdigest(), atoms=len(r["element"]))])))
+            corpus = Corpus(root)
+            class FirstStart:
+                def choice(self, values):
+                    return values[0]
+            crop = corpus.load(0, 2, FirstStart())
+            self.assertEqual(len(crop["element"]), 10)  # 3 + 7 atoms, two residues
+            self.assertEqual(crop["residue"].tolist(), [0]*3 + [1]*7)
+            limited = corpus.load(0, 3, FirstStart(), max_atoms=8)
+            self.assertEqual(len(limited["element"]), 3)
+            with self.assertRaisesRegex(ValueError, "No complete residue"):
+                corpus.load(0, 3, FirstStart(), max_atoms=2)
+            with self.assertRaises(ValueError):
+                corpus.load(0, 0, FirstStart())
 
     def test_wandb_is_optional_and_logs_when_enabled(self):
         class FakeRun:

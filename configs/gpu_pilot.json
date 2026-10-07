@@ -1,0 +1,9 @@
+{
+  "d_single": 128,
+  "d_pair": 32,
+  "n_heads": 8,
+  "n_pairformer_layers": 4,
+  "n_dit_layers": 4,
+  "d_time": 128,
+  "d_hidden_mult": 4
+}

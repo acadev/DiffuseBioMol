@@ -18,11 +18,11 @@ python3.12 -m venv .venv
 
 # The trainer itself runs entirely in Python. Choose a NEW run directory.
 .venv/bin/python -m diffusebiomol.train \
-  runs/python-corpus runs/python-experiment --epochs 10 --max-atoms 128 --batch-size 2
+  runs/python-corpus runs/python-experiment --epochs 10 --max-residues 16 --max-atoms 256 --batch-size 2
 
 # Resume with the same data, device, seed and hyperparameters; increase target epochs.
 .venv/bin/python -m diffusebiomol.train \
-  runs/python-corpus runs/python-experiment --epochs 20 --max-atoms 128 --batch-size 2 --resume
+  runs/python-corpus runs/python-experiment --epochs 20 --max-residues 16 --max-atoms 256 --batch-size 2 --resume
 ```
 
 The input may be a local file or a recursively scanned directory of `.pdb`, `.ent`,
@@ -59,7 +59,7 @@ fails, diagnostics are still written and the command exits with an error. JSON
 per source is a baseline interchange format, not the final sharded storage design.
 
 For larger experiments, pass `--model-config configs/small.json`, adjust
-`--max-atoms`/`--batch-size`, and select `--device cuda` (or `cuda:1`). On Apple
+`--max-residues`/`--max-atoms`/`--batch-size`, and select `--device cuda` (or `cuda:1`). On Apple
 hardware, `--device mps` selects Metal. Requested unavailable devices fail rather
 than silently falling back. CUDA and MPS training have not yet been validated.
 Resume currently requires the same device and thread settings as the checkpoint.

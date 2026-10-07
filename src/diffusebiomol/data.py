@@ -18,7 +18,10 @@ class Corpus:
         self.entries = self.manifest["entries"]
         self.vocab = self.manifest["vocab_sizes"]
 
-    def load(self, index, cap, rng):
+    def load(self, index, max_residues, rng, max_atoms=None):
+        """Sample consecutive complete residues, with an optional atom safety cap."""
+        if max_residues <= 0 or (max_atoms is not None and max_atoms <= 0):
+            raise ValueError("Crop limits must be positive")
         entry = self.entries[index]
         raw = (self.root / entry["file"]).read_bytes()
         if hashlib.sha256(raw).hexdigest() != entry["sha256"]:
@@ -27,14 +30,16 @@ class Corpus:
         n = len(record["element"])
         boundaries = np.flatnonzero(np.r_[True, (np.diff(record["residue"]) != 0) | (np.diff(record["chain"]) != 0), True])
         groups = [np.arange(a, b) for a, b in zip(boundaries[:-1], boundaries[1:])]
-        if n > cap:
-            starts = [i for i, g in enumerate(groups) if len(g) <= cap]
-            if not starts:
-                raise ValueError("No complete residue fits crop budget")
+        latest_start = max(0, len(groups) - max_residues)
+        starts = [i for i, g in enumerate(groups[:latest_start + 1])
+                  if max_atoms is None or len(g) <= max_atoms]
+        if not starts:
+            raise ValueError("No complete residue fits atom safety limit")
+        if len(groups) > max_residues or max_atoms is not None and n > max_atoms:
             start = int(rng.choice(starts))
             selected, used = [], 0
-            for group in groups[start:]:
-                if used + len(group) > cap:
+            for group in groups[start:start + max_residues]:
+                if max_atoms is not None and used + len(group) > max_atoms:
                     break
                 selected.extend(group)
                 used += len(group)

@@ -88,7 +88,7 @@ class TokenizerTests(unittest.TestCase):
             self.assertEqual(len(manifest["entries"]), 4)
             self.assertEqual(len(manifest["skipped"]), 1)
             corpus = Corpus(root / "corpus")
-            crop = corpus.load(0, 4, np.random.default_rng(1))
+            crop = corpus.load(0, 1, np.random.default_rng(1))
             self.assertEqual(len(crop["element"]), 4)
             self.assertEqual(len(np.unique(crop["residue"])), 1)
             self.assertEqual(tuple(collate([crop])["xyz"].shape), (1, 4, 3))

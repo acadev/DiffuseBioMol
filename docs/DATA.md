@@ -27,9 +27,10 @@ Each record is JSON with equal-length arrays:
 - `xyz`: atom-major `[N,3]` coordinates; virtual placeholders are neutralized in loss preparation.
 
 Records are checked against their checksums when loaded. Sources are split before
-cropping. Crops include complete consecutive residues; pair-position indices are
-computed after cropping. A crop with no observed atoms or no residue fitting the
-budget raises an error. This baseline does not include spatial crops or
+cropping. Crops contain up to `--max-residues` consecutive complete residues. The optional
+`--max-atoms` limit is a memory guard: it may end a crop early but never cuts a
+residue. Pair-position indices are computed after cropping. A crop with no
+observed atoms or no residue fitting the atom limit raises an error. This baseline does not include spatial crops or
 sequence-based clustering.
 
 Do not merge independently prepared corpora without checking vocabulary and

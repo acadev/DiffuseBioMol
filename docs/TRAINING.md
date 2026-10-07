@@ -12,15 +12,16 @@ Run directories must be new unless `--resume` is specified.
 
 ```sh
 python -m diffusebiomol.train examples/smoke-corpus runs/experiment \
-  --epochs 10 --batch-size 2 --max-atoms 128 --seed 17 --device cpu
+  --epochs 10 --batch-size 2 --max-residues 16 --max-atoms 256 --seed 17 --device cpu
 python -m diffusebiomol.train examples/smoke-corpus runs/experiment \
-  --epochs 20 --batch-size 2 --max-atoms 128 --seed 17 --device cpu --resume
+  --epochs 20 --batch-size 2 --max-residues 16 --max-atoms 256 --seed 17 --device cpu --resume
 ```
 
-Keep the corpus, model configuration, batch size, crop budget, seed, learning
+Keep the corpus, model configuration, batch size, residue/atom limits, seed, learning
 rate, device and thread count unchanged on resume. Target epoch count can grow.
-Checkpoints use an architecture identifier and corpus-manifest hash to reject
-incompatible resumes. Exact CPU resume was tested; cross-device resume is not
+Checkpoints use an architecture identifier, corpus-manifest hash, and crop policy
+to reject incompatible resumes. Runs created before residue-counted cropping
+need a new directory; their old checkpoint contract cannot be resumed. Exact CPU resume was tested; cross-device resume is not
 supported. After interruption, the last incomplete epoch is replayed and its
 uncommitted timing rows are removed.
 
@@ -56,7 +57,7 @@ environment/configuration path.
 | File | Contents |
 |---|---|
 | `manifest.json` | Source split, model/configuration, corpus hash and software versions |
-| `steps.csv` | Loss, cumulative crop presentations, real/padded atom counts, phase timings |
+| `steps.csv` | Loss, cumulative presentations, crop residues, real/padded atoms, padded pair elements, phase timings |
 | `checkpoint.pt` | Model, optimizer, RNG states, completed epoch, update/presentation counters |
 | `epoch_*.json` | Fixed-validation CFM loss, training/evaluation durations, finite-sample check |
 | `summary.json` | Final evaluation and cumulative counters |
@@ -67,6 +68,10 @@ epochs. Validation loss is normalized over observed coordinate components;
 virtual and batch padding positions are excluded. The sampler's three steps only
 check finite outputs, not scientific quality. Validation runs on the selected
 model device and is batched.
+
+Epoch metrics include training presentations/second, observed atoms/second,
+padded pair elements/second, and peak allocated/reserved CUDA bytes. GPU metrics
+require a CUDA run and exclude evaluation memory; evaluation has a separate time.
 
 Per-step timings distinguish host loading/preparation, transfer, forward and
 backward/optimizer work. Accelerator boundaries are synchronized for diagnostic
@@ -81,3 +86,25 @@ generalization. The six-source example is not sequence-clustered. Before scienti
 comparisons, build a clustered holdout and evaluate geometry, long-range contacts
 and external refolding/designability. Count repeated crops as presentations, not
 new independent structures.
+
+## One GPU pilot
+
+On a cluster GPU node, install a CUDA-enabled PyTorch build compatible with the
+cluster driver, then run the CUDA-only checks and a bounded pilot. For example:
+
+```sh
+python -m unittest discover -s tests -p test_cuda.py -v
+diffusebiomol-train /path/to/prepared-corpus runs/gpu-pilot \
+  --device cuda --model-config configs/gpu_pilot.json \
+  --max-residues 16 --max-atoms 384 --batch-size 2 --epochs 3
+```
+
+Use new run directories. Inspect `epoch_*.json` for loss, speed and peak GPU
+memory, and `steps.csv` for padding and stage costs. Repeat at 32 and 64 residues
+only after the preceding run fits and finishes. The optional atom limit is a
+resource guard; report both limits for comparisons. These commands use one GPU.
+`configs/gpu_pilot.json` is a roughly two-million-parameter measurement model;
+it has not been validated on a GPU yet. Start with the smaller
+`configs/small.json` if the pilot model cannot complete the correctness check.
+Multiple GPUs need distributed sampling, gradient synchronization, and rank-aware
+checkpointing before `torchrun` can be used safely.

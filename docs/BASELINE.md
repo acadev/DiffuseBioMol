@@ -14,7 +14,8 @@ missing atom masks, insertion codes, mixed modalities, residue-complete cropping
 masked flow loss, padding/output/gradient invariance, corpus integrity,
 configuration mismatch rejection, and exact CPU checkpoint resume.
 
-Training checks used 128-token crops, batch size two, four training sources and
+The measurements below predate residue-counted crop limits. They used crops
+bounded at 128 atom tokens, batch size two, four training sources and
 two held-out sources, one Pairformer and one DiT block, single width 16,
 pair width 8, and four heads. Three uninterrupted epochs matched two epochs
 followed by resume to epoch three for model, optimizer, RNG state, and counters.

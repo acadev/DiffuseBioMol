@@ -22,11 +22,11 @@ An existing Python environment can be reused with `python -m pip install -e .`.
 # Parse local PDB/mmCIF files into a new corpus directory.
 diffusebiomol-prepare /path/to/structures runs/corpus
 
-# Train on residue-complete crops; use a new run directory.
-diffusebiomol-train runs/corpus runs/experiment --epochs 10 --max-atoms 128 --batch-size 2
+# Train on residue-counted complete crops; use a new run directory.
+diffusebiomol-train runs/corpus runs/experiment --epochs 10 --max-residues 16 --max-atoms 256 --batch-size 2
 
 # Continue the same experiment.
-diffusebiomol-train runs/corpus runs/experiment --epochs 20 --max-atoms 128 --batch-size 2 --resume
+diffusebiomol-train runs/corpus runs/experiment --epochs 20 --max-residues 16 --max-atoms 256 --batch-size 2 --resume
 ```
 
 The equivalent module commands are `python -m diffusebiomol.prepare_corpus` and
@@ -40,12 +40,14 @@ policies, configuration, outputs, and checkpoint compatibility.
   proteins, RNA, DNA, ligands, ions, and modified residues.
 - Pairformer-lite/DiT backbone, linear-path flow-matching objective, polymer
   prior, rotation/centering augmentation, and Euler sampling.
-- Single-device FP32 training, source-disjoint validation, checksummed corpora,
-  exact tested CPU checkpoint resume, and diagnostic stage timings.
+- Single-device FP32 training with residue-counted crops, source-disjoint validation, checksummed corpora,
+  exact tested CPU checkpoint resume, diagnostic stage timings, and CUDA memory metrics.
 - CPU, CUDA, and MPS device selection. CPU is validated; accelerator training
   and throughput still require validation on target hardware.
 
-The current runner trains unconditional crops. Diffusion, motif clamping,
+The current runner trains unconditional crops. `--max-residues` sets the crop
+length; `--max-atoms` optionally guards memory without splitting residues.
+See [the one GPU pilot](docs/TRAINING.md#one-gpu-pilot). Diffusion, motif clamping,
 classifier-free guidance, geometry guidance, verifier training, distributed
 training, and full-structure generation are future work. Tokenizer support for
 multiple modalities does not establish generation quality for those modalities.
@@ -70,7 +72,7 @@ Python tests and command-line smoke checks.
 pyproject.toml              Package metadata, dependencies, and CLI commands
 src/diffusebiomol/        Parser, tokenizer, corpus, model, objective, trainer
 tests/               Offline parser and training regression tests
-configs/small.json    Example larger backbone configuration
+configs/             Small and GPU pilot model configurations
 docs/                       Baseline evidence and roadmap
 ```
 
