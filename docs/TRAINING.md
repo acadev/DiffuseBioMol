@@ -27,8 +27,7 @@ uncommitted timing rows are removed.
 
 Use `--device cuda`, `cuda:1` or `mps` for an available accelerator. The default
 is CPU. CUDA/MPS hardware tests are still outstanding. Install the appropriate
-PyTorch build for the training host. This baseline does not implement DDP, AMP,
-gradient accumulation or asynchronous prefetch.
+PyTorch build for the training host. AMP, gradient accumulation and asynchronous prefetch are not implemented.
 
 ## Weights & Biases
 
@@ -106,5 +105,48 @@ resource guard; report both limits for comparisons. These commands use one GPU.
 `configs/gpu_pilot.json` is a roughly two-million-parameter measurement model;
 it has not been validated on a GPU yet. Start with the smaller
 `configs/small.json` if the pilot model cannot complete the correctness check.
-Multiple GPUs need distributed sampling, gradient synchronization, and rank-aware
-checkpointing before `torchrun` can be used safely.
+Distributed training is available through `torchrun`; see below.
+
+## Distributed training
+
+Use `torchrun` with one process per GPU. On one node with four visible GPUs:
+
+```sh
+torchrun --standalone --nnodes=1 --nproc-per-node=4 -m diffusebiomol.train \
+  /path/to/prepared-corpus runs/ddp-pilot --device cuda \
+  --model-config configs/gpu_pilot.json --max-residues 16 \
+  --max-atoms 384 --batch-size 2 --epochs 3
+```
+
+`--batch-size` is **per rank**, so the maximum global batch here is eight
+sources. `torchrun` sets `RANK`, `WORLD_SIZE`, and `LOCAL_RANK`; each local rank
+uses its corresponding visible CUDA device. The model uses NCCL on CUDA and Gloo
+on CPU. A CPU verification run can use `--device cpu` and `--nproc-per-node=3`.
+
+Every source in the training split is assigned once per epoch. The final global
+batch can be smaller; ranks without a real source perform a zero-weight forward
+pass to participate in gradient synchronization. Losses are weighted by the
+global number of observed atoms, and all ranks use the same optimizer update.
+`presentations` counts actual sources, not synchronization placeholders.
+
+Rank zero alone writes checkpoints, metrics and W&B logs. Checkpoints contain
+model and optimizer state plus independent crop/CPU/CUDA RNG state for every
+rank. An interrupted epoch is replayed. Resume requires the same corpus, model,
+world size, per-rank batch size, crop limits, seed, device type and thread count;
+only the target epoch count may grow. All nodes must see the same input corpus
+and run directory through shared storage. Single-process and DDP checkpoints
+have different contracts and cannot be interchanged.
+
+For multiple nodes, launch one `torchrun` agent per node using the same
+`--nnodes`, `--nproc-per-node`, `--rdzv-id`, and `--rdzv-endpoint` values; set
+`--node-rank` appropriately. The scheduler must provide network reachability
+between nodes and a shared run directory. See the
+[PyTorch torchrun documentation](https://docs.pytorch.org/docs/2.14/elastic/run.html)
+for rendezvous options.
+
+Epoch metrics report aggregate presentations and observed atoms per second,
+and the maximum peak CUDA memory across ranks. Stage timings in `steps.csv`
+are the slowest rank at each step. Evaluation and sampling run on rank zero
+after all ranks finish training. This design was checked with three CPU ranks,
+including an uneven final batch and exact epoch-boundary resume. Multi-GPU
+NCCL performance and restart behavior still require a cluster run.

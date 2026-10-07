@@ -23,9 +23,9 @@ CPU resume at epoch boundaries. Checkpoints are saved before validation.
    and batch memory, preserving deterministic sampling and restart behavior.
 4. Evaluate mixed precision and activation checkpointing against FP32 correctness.
    Measure pair-budget batching and padding efficiency before scaling crop length.
-5. Add PyTorch distributed data parallel training with rank-aware sampling,
-   globally weighted losses, and restart checks. Introduce state sharding only
-   when model-state memory justifies it.
+5. Validate the implemented PyTorch distributed data-parallel path on target
+   GPUs, including NCCL throughput, uneven batches, and shared-storage restart.
+   Introduce state sharding only when model-state memory justifies it.
 
 Diagnostic synchronization intentionally serializes timing boundaries. It is not
 an overlapped production throughput measurement. Report sustained optimizer-step

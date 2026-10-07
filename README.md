@@ -40,16 +40,18 @@ policies, configuration, outputs, and checkpoint compatibility.
   proteins, RNA, DNA, ligands, ions, and modified residues.
 - Pairformer-lite/DiT backbone, linear-path flow-matching objective, polymer
   prior, rotation/centering augmentation, and Euler sampling.
-- Single-device FP32 training with residue-counted crops, source-disjoint validation, checksummed corpora,
-  exact tested CPU checkpoint resume, diagnostic stage timings, and CUDA memory metrics.
+- FP32 single-device and distributed data-parallel training with residue-counted
+  crops, source-disjoint validation, checksummed corpora, tested CPU resume,
+  diagnostic stage timings, and CUDA memory metrics.
 - CPU, CUDA, and MPS device selection. CPU is validated; accelerator training
   and throughput still require validation on target hardware.
 
-The current runner trains unconditional crops. `--max-residues` sets the crop
+The current runner trains unconditional crops. Multi-GPU execution uses PyTorch
+DDP through `torchrun`; see [distributed training](docs/TRAINING.md#distributed-training).
+ `--max-residues` sets the crop
 length; `--max-atoms` optionally guards memory without splitting residues.
 See [the one GPU pilot](docs/TRAINING.md#one-gpu-pilot). Diffusion, motif clamping,
-classifier-free guidance, geometry guidance, verifier training, distributed
-training, and full-structure generation are future work. Tokenizer support for
+classifier-free guidance, geometry guidance, verifier training, full-structure generation are future work. Tokenizer support for
 multiple modalities does not establish generation quality for those modalities.
 Dense pair features still require quadratic memory.
 

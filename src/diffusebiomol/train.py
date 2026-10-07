@@ -2,6 +2,7 @@
 import argparse
 import csv
 import json
+import os
 import platform
 import time
 from dataclasses import asdict
@@ -52,6 +53,14 @@ def train(corpus_dir, run_dir, *, epochs=3, batch_size=2, max_residues=16,
           seed=17, learning_rate=0.001, device="cpu", threads=2, resume=False,
           model_config=None, wandb_project=None, wandb_entity=None,
           wandb_name=None, wandb_mode="online", wandb_upload_checkpoint=False):
+    if int(os.environ.get("WORLD_SIZE", "1")) > 1:
+        from .distributed import train_distributed
+        return train_distributed(corpus_dir, run_dir, epochs=epochs, batch_size=batch_size,
+            max_residues=max_residues, max_atoms=max_atoms, seed=seed,
+            learning_rate=learning_rate, device=device, threads=threads, resume=resume,
+            model_config=model_config, wandb_project=wandb_project,
+            wandb_entity=wandb_entity, wandb_name=wandb_name,
+            wandb_mode=wandb_mode, wandb_upload_checkpoint=wandb_upload_checkpoint)
     if min(epochs, batch_size, max_residues, threads) <= 0 or learning_rate <= 0 or (max_atoms is not None and max_atoms <= 0):
         raise ValueError("Epochs, batch size, crop limits, threads and learning rate must be positive")
     dev = torch.device(device)
