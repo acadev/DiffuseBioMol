@@ -56,7 +56,10 @@ classifier-free guidance, geometry guidance, verifier training, full-structure g
 multiple modalities does not establish generation quality for those modalities.
 Dense pair features still require quadratic memory.
 
-A small, reproducible [domain similarity pilot](examples/fold-pilot/README.md)
+A [PDB-scale CATH domain pipeline](docs/DATA.md) prepares fold-annotated,
+nonredundant training corpora with parallel AtomWorks parsing, superfamily
+holdout, and fold-balanced sampling. A small, reproducible
+[domain similarity pilot](examples/fold-pilot/README.md)
 compares sequence identity with structural TM-score on six curated PDB domains,
 then runs an oracle fold-conditioned generation diagnostic. It is an exploratory
 experiment and does not establish fold-aware generation from sequence alone.

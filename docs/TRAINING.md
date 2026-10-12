@@ -148,6 +148,11 @@ batch can be smaller; ranks without a real source perform a zero-weight forward
 pass to participate in gradient synchronization. Losses are weighted by the
 global number of observed atoms, and all ranks use the same optimizer update.
 `presentations` counts actual sources, not synchronization placeholders.
+With `--fold-sampling uniform_fold`, each epoch instead draws the requested
+number of presentations with replacement from CATH folds; all ranks shard the
+same deterministic draw sequence. Use `--split-group superfamily` to keep CATH
+homologous superfamilies separate in validation. Both choices are locked into
+the resume contract. See [fold-diverse data preparation](DATA.md).
 
 Rank zero alone writes checkpoints, metrics and W&B logs. Checkpoints contain
 model and optimizer state plus independent crop/CPU/CUDA RNG state for every

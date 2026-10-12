@@ -1,5 +1,58 @@
 # Data preparation and schema
 
+## PDB-scale fold-diverse protein corpus
+
+Use the [CATH classification release](https://download.cathdb.info/cath/releases/latest-release/cath-classification-data/)
+with a matching [nonredundant domain-coordinate set](https://download.cathdb.info/cath/releases/latest-release/non-redundant-data-sets/).
+Download `cath-domain-list.txt`, one `cath-dataset-nonredundant-S20` or `S40`
+`.list`, and its matching `.pdb.tgz` from the same CATH release. Pin the release
+URL and retain these input files. Extract the archive on cluster scratch storage;
+the input directory must contain the **CATH-chopped domain PDBs**, not whole-entry
+PDB structures. For example:
+
+```sh
+mkdir -p /scratch/cath-s40-domains
+tar -xzf /scratch/cath-dataset-nonredundant-S40.pdb.tgz -C /scratch/cath-s40-domains
+diffusebiomol-prepare-folds /scratch/cath-s40-domains \
+  /scratch/cath-domain-list.txt /scratch/dbm-cath-s40 \
+  --selection /scratch/cath-dataset-nonredundant-S40.list \
+  --workers 16 --min-residues 40 --max-residues 512 --strict
+```
+
+`--strict` fails for missing coordinates or parse/filter skips, with a manifest
+for diagnostics in the latter case. Omit it to build an explicitly incomplete
+corpus and inspect `missing_coordinates` and `skipped`. The worker queue is
+bounded at twice the worker count. Classification and selection are read as
+linear files; no pairwise structure comparisons are performed. Benchmark a
+small extracted subset before choosing worker count and storage layout. The
+current schema writes one JSON file per domain, so filesystem metadata traffic
+and AtomWorks parsing should be measured before processing the full collection.
+
+Each domain entry includes `domain_id`, CATH topology (`fold_id`, C.A.T),
+homologous superfamily (`superfamily_id`, C.A.T.H), S35 family, resolution,
+source path, observed residue count, and record checksum. The manifest records
+classification/selection SHA-256 values and a fold histogram. The S20/S40
+selection is already nonredundant at the stated sequence-identity threshold;
+it does not by itself make a homology-disjoint validation split.
+
+Train with a superfamily holdout and uniform fold draws:
+
+```sh
+diffusebiomol-train /scratch/dbm-cath-s40 runs/cath-s40 \
+  --split-group superfamily --fold-sampling uniform_fold \
+  --presentations-per-epoch 20000 --max-residues 256 \
+  --max-atoms 8192 --batch-size 1 --device cuda --epochs 10
+```
+
+For multiple GPUs, replace `diffusebiomol-train` with `torchrun ... -m
+diffusebiomol.train` as in [distributed training](TRAINING.md). Uniform fold
+sampling draws a fold, then a domain in that fold, both uniformly **with
+replacement**; presentations may repeat within an epoch. Validation is the
+fixed held-out superfamily set and is not oversampled. `--split-group fold`
+tests unseen CATH topologies instead, but this is a harder and different
+generalization question. Fold labels guide sampling only: the current model
+does not yet consume a fold or sequence-similarity conditioning signal.
+
 `examples/smoke-corpus` is ready to use. Prepare additional local structures
 with the native AtomWorks parser and tokenizer:
 

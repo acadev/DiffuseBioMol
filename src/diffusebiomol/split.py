@@ -6,9 +6,13 @@ import numpy as np
 
 
 def make_split(corpus, seed, *, sequence_clusters=None, validation_fraction=0.1,
-               max_validation_sources=1024):
+               max_validation_sources=1024, group_by="source"):
     if not 0 < validation_fraction < 1 or max_validation_sources < 1:
         raise ValueError("Validation fraction must be in (0, 1) and cap must be positive")
+    if group_by not in ("source", "superfamily", "fold"):
+        raise ValueError("group_by must be source, superfamily, or fold")
+    if sequence_clusters is not None and group_by != "source":
+        raise ValueError("Choose either sequence clusters or a CATH grouping")
     entries = corpus.entries
     parent = list(range(len(entries)))
 
@@ -24,12 +28,18 @@ def make_split(corpus, seed, *, sequence_clusters=None, validation_fraction=0.1,
     if sequence_clusters is None:
         first = {}
         for i, entry in enumerate(entries):
-            source = entry.get("source", entry["file"])
-            if source in first:
-                union(i, first[source])
+            if group_by == "source":
+                key = entry.get("source", entry["file"])
             else:
-                first[source] = i
-        metadata = dict(method="source", cluster_sha256=None)
+                field = "superfamily_id" if group_by == "superfamily" else "fold_id"
+                if field not in entry:
+                    raise ValueError(f"Corpus entry {i} lacks {field}")
+                key = entry[field]
+            if key in first:
+                union(i, first[key])
+            else:
+                first[key] = i
+        metadata = dict(method=group_by, cluster_sha256=None)
     else:
         raw = Path(sequence_clusters).read_bytes()
         cluster_by_entity = {}

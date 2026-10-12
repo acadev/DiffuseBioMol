@@ -13,6 +13,7 @@ import torch
 
 from .data import Corpus, collate
 from .flow import cfm_loss, prepare, sample_flow
+from .fold_sampling import epoch_sources
 from .model import FlowModel, ModelConfig
 from .split import make_split
 
@@ -55,7 +56,8 @@ def train(corpus_dir, run_dir, *, epochs=3, batch_size=2, max_residues=16,
           model_config=None, wandb_project=None, wandb_entity=None,
           wandb_name=None, wandb_mode="online", wandb_upload_checkpoint=False,
           sequence_clusters=None, validation_fraction=0.1,
-          max_validation_sources=1024):
+          max_validation_sources=1024, split_group="source",
+          fold_sampling="source", presentations_per_epoch=None):
     if int(os.environ.get("WORLD_SIZE", "1")) > 1:
         from .distributed import train_distributed
         return train_distributed(corpus_dir, run_dir, epochs=epochs, batch_size=batch_size,
@@ -65,7 +67,8 @@ def train(corpus_dir, run_dir, *, epochs=3, batch_size=2, max_residues=16,
             wandb_entity=wandb_entity, wandb_name=wandb_name,
             wandb_mode=wandb_mode, wandb_upload_checkpoint=wandb_upload_checkpoint,
             sequence_clusters=sequence_clusters, validation_fraction=validation_fraction,
-            max_validation_sources=max_validation_sources)
+            max_validation_sources=max_validation_sources, split_group=split_group,
+            fold_sampling=fold_sampling, presentations_per_epoch=presentations_per_epoch)
     if min(epochs, batch_size, max_residues, threads) <= 0 or learning_rate <= 0 or (max_atoms is not None and max_atoms <= 0):
         raise ValueError("Epochs, batch size, crop limits, threads and learning rate must be positive")
     dev = torch.device(device)
@@ -83,13 +86,16 @@ def train(corpus_dir, run_dir, *, epochs=3, batch_size=2, max_residues=16,
         raise ValueError("At least three sources are required")
     training, validation, split = make_split(corpus, seed,
         sequence_clusters=sequence_clusters, validation_fraction=validation_fraction,
-        max_validation_sources=max_validation_sources)
+        max_validation_sources=max_validation_sources, group_by=split_group)
+    epoch_sources(training, corpus, 1, seed, fold_sampling=fold_sampling,
+                  presentations_per_epoch=presentations_per_epoch)
     config = model_config or ModelConfig()
     contract = dict(schema=3, architecture="feature_norm_gelu_time_v1",
         objective="flow_matching", model=asdict(config),
         corpus=corpus.signature, batch_size=batch_size, max_residues=max_residues,
         max_atoms=max_atoms, seed=seed,
-        learning_rate=learning_rate, device=str(dev), threads=threads, split=split)
+        learning_rate=learning_rate, device=str(dev), threads=threads, split=split,
+        fold_sampling=fold_sampling, presentations_per_epoch=presentations_per_epoch)
     root = Path(run_dir)
     if not resume and root.exists():
         raise ValueError("Choose a new run directory or pass --resume")
@@ -139,7 +145,9 @@ def train(corpus_dir, run_dir, *, epochs=3, batch_size=2, max_residues=16,
         if dev.type == "cuda":
             torch.cuda.reset_peak_memory_stats(dev)
         model.train()
-        sorted_indices = sorted(training, key=lambda i: min(corpus.entries[i]["atoms"],
+        selected = epoch_sources(training, corpus, epoch, seed,
+            fold_sampling=fold_sampling, presentations_per_epoch=presentations_per_epoch)
+        sorted_indices = sorted(selected, key=lambda i: min(corpus.entries[i]["atoms"],
             max_atoms if max_atoms is not None else corpus.entries[i]["atoms"]))
         batches = [sorted_indices[i:i+batch_size] for i in range(0, len(sorted_indices), batch_size)]
         rng.shuffle(batches)
@@ -208,7 +216,7 @@ def train(corpus_dir, run_dir, *, epochs=3, batch_size=2, max_residues=16,
         metrics = evaluate(model, corpus, validation, max_residues, max_atoms, batch_size, seed)
         metrics.update(epoch=epoch, presentations=presentations, updates=updates,
             train_seconds=train_seconds,
-            train_presentations_per_s=len(training) / train_seconds,
+            train_presentations_per_s=len(selected) / train_seconds,
             train_real_atoms_per_s=epoch_atoms / train_seconds,
             train_padded_pair_elements_per_s=epoch_pair_elements / train_seconds)
         if dev.type == "cuda":
@@ -287,6 +295,11 @@ def main():
     parser.add_argument("--sequence-clusters", help="RCSB clusters-by-entity text file; requires matching corpus entity keys")
     parser.add_argument("--validation-fraction", type=float, default=0.1)
     parser.add_argument("--max-validation-sources", type=int, default=1024)
+    parser.add_argument("--split-group", choices=("source", "superfamily", "fold"), default="source",
+                        help="Keep CATH groups disjoint between training and validation")
+    parser.add_argument("--fold-sampling", choices=("source", "uniform_fold"), default="source")
+    parser.add_argument("--presentations-per-epoch", type=int,
+                        help="Number of with-replacement draws under uniform_fold sampling")
     parser.add_argument("--wandb-project", help="Enable W&B logging for this project")
     parser.add_argument("--wandb-entity")
     parser.add_argument("--wandb-name")

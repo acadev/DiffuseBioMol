@@ -20,6 +20,7 @@ Repository = "https://github.com/acadev/DiffuseBioMol"
 
 [project.scripts]
 diffusebiomol-prepare = "diffusebiomol.prepare_corpus:main"
+diffusebiomol-prepare-folds = "diffusebiomol.prepare_fold_corpus:main"
 diffusebiomol-train = "diffusebiomol.train:main"
 
 [tool.setuptools.packages.find]

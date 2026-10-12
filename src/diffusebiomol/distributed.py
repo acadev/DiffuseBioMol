@@ -14,14 +14,18 @@ from torch.nn.parallel import DistributedDataParallel
 
 from .data import Corpus, collate
 from .flow import cfm_loss, prepare
+from .fold_sampling import epoch_sources
 from .model import FlowModel, ModelConfig
 from .split import make_split
 from .train import atomic_save, evaluate, start_wandb, synchronize, transfer
 
 
-def rank_batches(training, corpus, batch_size, world_size, rank, epoch, seed):
-    """Partition a seeded source order without repeats or dropped sources."""
-    order = sorted(training, key=lambda i: corpus.entries[i]["atoms"])
+def rank_batches(training, corpus, batch_size, world_size, rank, epoch, seed,
+                 fold_sampling="source", presentations_per_epoch=None):
+    """Partition the deterministic epoch presentations across ranks."""
+    selected = epoch_sources(training, corpus, epoch, seed,
+        fold_sampling=fold_sampling, presentations_per_epoch=presentations_per_epoch)
+    order = sorted(selected, key=lambda i: corpus.entries[i]["atoms"])
     batches = [order[i:i + batch_size * world_size]
                for i in range(0, len(order), batch_size * world_size)]
     np.random.default_rng(seed + epoch).shuffle(batches)
@@ -43,7 +47,8 @@ def restore_rank_state(state, rng, device):
 def train_distributed(corpus_dir, run_dir, *, epochs, batch_size, max_residues,
         max_atoms, seed, learning_rate, device, threads, resume, model_config,
         wandb_project, wandb_entity, wandb_name, wandb_mode, wandb_upload_checkpoint,
-        sequence_clusters, validation_fraction, max_validation_sources):
+        sequence_clusters, validation_fraction, max_validation_sources,
+        split_group, fold_sampling, presentations_per_epoch):
     if min(epochs, batch_size, max_residues, threads) <= 0 or learning_rate <= 0 or (max_atoms is not None and max_atoms <= 0):
         raise ValueError("Epochs, batch size, crop limits, threads and learning rate must be positive")
     world_size = int(os.environ["WORLD_SIZE"])
@@ -72,13 +77,16 @@ def train_distributed(corpus_dir, run_dir, *, epochs, batch_size, max_residues,
             raise ValueError("At least three sources are required")
         training, validation, split = make_split(corpus, seed,
             sequence_clusters=sequence_clusters, validation_fraction=validation_fraction,
-            max_validation_sources=max_validation_sources)
+            max_validation_sources=max_validation_sources, group_by=split_group)
+        epoch_sources(training, corpus, 1, seed, fold_sampling=fold_sampling,
+                      presentations_per_epoch=presentations_per_epoch)
         config = model_config or ModelConfig()
         contract = dict(schema=4, architecture="feature_norm_gelu_time_v1",
             objective="flow_matching", model=asdict(config), corpus=corpus.signature,
             batch_size=batch_size, max_residues=max_residues, max_atoms=max_atoms,
             seed=seed, learning_rate=learning_rate, device=requested.type,
-            threads=threads, world_size=world_size, split=split)
+            threads=threads, world_size=world_size, split=split,
+            fold_sampling=fold_sampling, presentations_per_epoch=presentations_per_epoch)
         root = Path(run_dir)
         exists = torch.tensor([int(root.exists()), int((root / "checkpoint.pt").is_file())]
             if rank == 0 else [0, 0], dtype=torch.long, device=dev)
@@ -133,7 +141,8 @@ def train_distributed(corpus_dir, run_dir, *, epochs, batch_size, max_residues,
             if dev.type == "cuda":
                 torch.cuda.reset_peak_memory_stats(dev)
             wrapped.train()
-            batches = rank_batches(training, corpus, batch_size, world_size, rank, epoch, seed)
+            batches = rank_batches(training, corpus, batch_size, world_size, rank, epoch, seed,
+                fold_sampling=fold_sampling, presentations_per_epoch=presentations_per_epoch)
             epoch_atoms = epoch_pairs = epoch_presentations = 0
             for number, indices in enumerate(batches, 1):
                 t0 = time.perf_counter()
