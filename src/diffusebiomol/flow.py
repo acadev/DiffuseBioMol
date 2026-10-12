@@ -35,20 +35,22 @@ def prepare(batch, rng):
             "t": t, "target": x1-x0, "mask": real}
 
 
-def cfm_loss(model, batch, example):
-    predicted = model(batch, example["x"], example["t"])
+def cfm_loss(model, batch, example, cond=None):
+    predicted = model(batch, example["x"], example["t"], cond=cond)
     error = (predicted - example["target"]).square() * example["mask"][..., None]
     return error.sum() / (3 * example["mask"].sum().clamp_min(1))
 
 
 @torch.no_grad()
-def sample_flow(model, host_batch, rng, steps=40):
+def sample_flow(model, host_batch, rng, steps=40, cond=None):
     if steps <= 0:
         raise ValueError("steps must be positive")
     device = next(model.parameters()).device
     batch = {k: v.to(device) for k, v in host_batch.items()}
+    if cond is not None:
+        cond = cond.to(device)
     x = prior(host_batch, rng).to(device)
     for i in range(steps):
         t = torch.full((len(x),), i / steps, device=device)
-        x = x + model(batch, x, t) / steps
+        x = x + model(batch, x, t, cond=cond) / steps
     return x.masked_fill(~batch["valid"][..., None], 0).cpu()

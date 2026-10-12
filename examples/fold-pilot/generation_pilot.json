@@ -1,0 +1,36 @@
+{
+  "schema_version": 1,
+  "training_ids": [
+    "1UBQ",
+    "1U4A",
+    "2GB1",
+    "1CRN"
+  ],
+  "holdout_ids": [
+    "1A5R",
+    "1PGA"
+  ],
+  "epochs": 30,
+  "max_residues": 16,
+  "max_atoms": 256,
+  "seed": 17,
+  "context": "oracle TM-score similarities to structural landmarks; held-out coordinates used only to construct context and evaluation target",
+  "baseline": {
+    "last_training_loss": 80.8669662475586,
+    "validation_losses": {
+      "1A5R": 134.24905395507812,
+      "1PGA": 360.9114685058594
+    },
+    "mean_validation_loss": 247.58026123046875,
+    "finite_three_step_sample": true
+  },
+  "conditioned": {
+    "last_training_loss": 80.97259521484375,
+    "validation_losses": {
+      "1A5R": 131.50413513183594,
+      "1PGA": 364.34674072265625
+    },
+    "mean_validation_loss": 247.9254379272461,
+    "finite_three_step_sample": true
+  }
+}

@@ -1,0 +1,38 @@
+{
+  "schema_version": 1,
+  "description": "Six hand-curated single-domain proteins for a small sequence-versus-fold proof. SUMO-1 is trimmed to remove its flexible N-terminal tail.",
+  "landmarks": ["1UBQ", "2GB1", "1CRN"],
+  "generation_holdout": ["1A5R", "1PGA"],
+  "domains": [
+    {
+      "id": "1UBQ", "group": "ubiquitin_like", "chain": "A", "start": 1, "end": 76,
+      "file": "structures/1UBQ.cif.gz", "sha256": "25db36d26900de511dbd8ced79a57dc0a70d42e6dd3db38ca3a4b851f12b8025",
+      "source": "https://www.rcsb.org/structure/1UBQ"
+    },
+    {
+      "id": "1A5R", "group": "ubiquitin_like", "chain": "A", "start": 21, "end": 97,
+      "file": "structures/1A5R.cif.gz", "sha256": "59258c33a9015be3f8097f4f39e52fc3f0ac6ead92868507e64390228fb5286c",
+      "source": "https://www.rcsb.org/structure/1A5R"
+    },
+    {
+      "id": "1U4A", "group": "ubiquitin_like", "chain": "A", "start": 1, "end": 79,
+      "file": "structures/1U4A.cif.gz", "sha256": "512c8efd945430333acfcc4ba7bc040b31785359c5e80cdd09b6d1ba6b1021ce",
+      "source": "https://www.rcsb.org/structure/1U4A"
+    },
+    {
+      "id": "2GB1", "group": "protein_g_b1", "chain": "A", "start": 1, "end": 56,
+      "file": "structures/2GB1.cif.gz", "sha256": "b4faf2b95c8438065f532839555743c25a5038e4b10ce42978a0f5970e294e04",
+      "source": "https://www.rcsb.org/structure/2GB1"
+    },
+    {
+      "id": "1PGA", "group": "protein_g_b1", "chain": "A", "start": 1, "end": 56,
+      "file": "structures/1PGA.cif.gz", "sha256": "f8106629d4418c6c2e539ddee2c8c5e2d5f473f474b15ba44d474e995eb81098",
+      "source": "https://www.rcsb.org/structure/1PGA"
+    },
+    {
+      "id": "1CRN", "group": "crambin_outgroup", "chain": "A", "start": 1, "end": 46,
+      "file": "structures/1CRN.cif.gz", "sha256": "eed0359a2b48a199c33e1d4e6f47ebb397aa69a989e96da165e3fc72e4dae4a3",
+      "source": "https://www.rcsb.org/structure/1CRN"
+    }
+  ]
+}

@@ -1,0 +1,240 @@
+{
+  "schema_version": 1,
+  "curated_sha256": "f308ac7441b67a9c27014b08192ccce87e4666ec93aefc24c300ba2736e205d4",
+  "methods": {
+    "sequence": "BLOSUM62 global alignment; identity over aligned residue pairs",
+    "structure": "Biotite 3Di structural-homolog alignment; TM-score normalized by longer domain"
+  },
+  "domains": [
+    {
+      "id": "1UBQ",
+      "group": "ubiquitin_like",
+      "sequence": "MQIFVKTLTGKTITLEVEPSDTIENVKAKIQDKEGIPPDQQRLIFAGKQLEDGRTLSDYNIQKESTLHLVLRLRGG",
+      "residues": 76,
+      "atoms": 601
+    },
+    {
+      "id": "1A5R",
+      "group": "ubiquitin_like",
+      "sequence": "GEYIKLKVIGQDSSEIHFKVKMTTHLKKLKESYCQRQGVPMNSLRFLFEGQRIADNHTPKELGMEEEDVIEVYQEQT",
+      "residues": 77,
+      "atoms": 632
+    },
+    {
+      "id": "1U4A",
+      "group": "ubiquitin_like",
+      "sequence": "NDHINLKVAGQDGSVVQFKIKRHTPLSKLMKAYSERQGLSMRQIRFRFDGQPINETDTPAQLEMEDEDTIDVFQQQTGG",
+      "residues": 79,
+      "atoms": 633
+    },
+    {
+      "id": "2GB1",
+      "group": "protein_g_b1",
+      "sequence": "MTYKLILNGKTLKGETTTEAVDAATAEKVFKQYANDNGVDGEWTYDDATKTFTVTE",
+      "residues": 56,
+      "atoms": 435
+    },
+    {
+      "id": "1PGA",
+      "group": "protein_g_b1",
+      "sequence": "MTYKLILNGKTLKGETTTEAVDAATAEKVFKQYANDNGVDGEWTYDDATKTFTVTE",
+      "residues": 56,
+      "atoms": 435
+    },
+    {
+      "id": "1CRN",
+      "group": "crambin_outgroup",
+      "sequence": "TTCCPSIVARSNFNVCRLPGTPEAICATYTGCIIIPGATCPGDYAN",
+      "residues": 46,
+      "atoms": 326
+    }
+  ],
+  "pairs": [
+    {
+      "a": "1UBQ",
+      "b": "1A5R",
+      "same_group": true,
+      "sequence_identity": 0.16216216216216217,
+      "sequence_coverage": 0.961038961038961,
+      "tm_score": 0.636285856172636,
+      "structural_anchors": 73
+    },
+    {
+      "a": "1UBQ",
+      "b": "1U4A",
+      "same_group": true,
+      "sequence_identity": 0.15789473684210525,
+      "sequence_coverage": 0.9620253164556962,
+      "tm_score": 0.7278231367280211,
+      "structural_anchors": 76
+    },
+    {
+      "a": "1UBQ",
+      "b": "2GB1",
+      "same_group": false,
+      "sequence_identity": 0.2708333333333333,
+      "sequence_coverage": 0.631578947368421,
+      "tm_score": 0.3870134855571546,
+      "structural_anchors": 53
+    },
+    {
+      "a": "1UBQ",
+      "b": "1PGA",
+      "same_group": false,
+      "sequence_identity": 0.2708333333333333,
+      "sequence_coverage": 0.631578947368421,
+      "tm_score": 0.4052282634534334,
+      "structural_anchors": 52
+    },
+    {
+      "a": "1UBQ",
+      "b": "1CRN",
+      "same_group": false,
+      "sequence_identity": 0.3333333333333333,
+      "sequence_coverage": 0.27631578947368424,
+      "tm_score": 0.15825345641688296,
+      "structural_anchors": 41
+    },
+    {
+      "a": "1A5R",
+      "b": "1U4A",
+      "same_group": true,
+      "sequence_identity": 0.4935064935064935,
+      "sequence_coverage": 0.9746835443037974,
+      "tm_score": 0.6916097809996786,
+      "structural_anchors": 77
+    },
+    {
+      "a": "1A5R",
+      "b": "2GB1",
+      "same_group": false,
+      "sequence_identity": 0.1388888888888889,
+      "sequence_coverage": 0.4675324675324675,
+      "tm_score": 0.4454978843788048,
+      "structural_anchors": 54
+    },
+    {
+      "a": "1A5R",
+      "b": "1PGA",
+      "same_group": false,
+      "sequence_identity": 0.1388888888888889,
+      "sequence_coverage": 0.4675324675324675,
+      "tm_score": 0.42284700467989045,
+      "structural_anchors": 54
+    },
+    {
+      "a": "1A5R",
+      "b": "1CRN",
+      "same_group": false,
+      "sequence_identity": 0.4,
+      "sequence_coverage": 0.06493506493506493,
+      "tm_score": 0.19309996320055678,
+      "structural_anchors": 43
+    },
+    {
+      "a": "1U4A",
+      "b": "2GB1",
+      "same_group": false,
+      "sequence_identity": 0.29411764705882354,
+      "sequence_coverage": 0.43037974683544306,
+      "tm_score": 0.45059991184669207,
+      "structural_anchors": 53
+    },
+    {
+      "a": "1U4A",
+      "b": "1PGA",
+      "same_group": false,
+      "sequence_identity": 0.29411764705882354,
+      "sequence_coverage": 0.43037974683544306,
+      "tm_score": 0.36535859409766863,
+      "structural_anchors": 54
+    },
+    {
+      "a": "1U4A",
+      "b": "1CRN",
+      "same_group": false,
+      "sequence_identity": 0.4,
+      "sequence_coverage": 0.06329113924050633,
+      "tm_score": 0.14534242847297765,
+      "structural_anchors": 23
+    },
+    {
+      "a": "2GB1",
+      "b": "1PGA",
+      "same_group": true,
+      "sequence_identity": 1.0,
+      "sequence_coverage": 1.0,
+      "tm_score": 0.8596899850027901,
+      "structural_anchors": 56
+    },
+    {
+      "a": "2GB1",
+      "b": "1CRN",
+      "same_group": false,
+      "sequence_identity": 0.3333333333333333,
+      "sequence_coverage": 0.32142857142857145,
+      "tm_score": 0.1675729410988944,
+      "structural_anchors": 36
+    },
+    {
+      "a": "1PGA",
+      "b": "1CRN",
+      "same_group": false,
+      "sequence_identity": 0.3333333333333333,
+      "sequence_coverage": 0.32142857142857145,
+      "tm_score": 0.1608588695526123,
+      "structural_anchors": 36
+    }
+  ],
+  "landmarks": [
+    "1UBQ",
+    "2GB1",
+    "1CRN"
+  ],
+  "contexts": {
+    "1UBQ": [
+      1.0,
+      0.3870134855571546,
+      0.15825345641688296,
+      0.0
+    ],
+    "1A5R": [
+      0.636285856172636,
+      0.4454978843788048,
+      0.19309996320055678,
+      0.0
+    ],
+    "1U4A": [
+      0.7278231367280211,
+      0.45059991184669207,
+      0.14534242847297765,
+      0.0
+    ],
+    "2GB1": [
+      0.3870134855571546,
+      1.0,
+      0.1675729410988944,
+      0.0
+    ],
+    "1PGA": [
+      0.4052282634534334,
+      0.8596899850027901,
+      0.1608588695526123,
+      0.0
+    ],
+    "1CRN": [
+      0.15825345641688296,
+      0.1675729410988944,
+      1.0,
+      0.0
+    ]
+  },
+  "summary": {
+    "same_group_pairs": 4,
+    "different_group_pairs": 11,
+    "sequence_auc": 0.5909090909090909,
+    "structure_auc": 1.0,
+    "min_same_group_tm": 0.636285856172636,
+    "max_different_group_tm": 0.45059991184669207
+  }
+}

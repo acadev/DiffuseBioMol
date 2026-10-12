@@ -34,6 +34,10 @@ does not eliminate the explicit dense pair representation's quadratic memory.
 
 ## Scientific capabilities still required
 
+- Extend the [six-domain similarity pilot](../examples/fold-pilot/README.md) to a
+  representative domain corpus. Train a sequence-to-fold encoder against
+  structure-derived similarity, with sequence-disjoint and fold-disjoint tests.
+  The present oracle-conditioned generation check has not improved held-out loss.
 - Add diffusion as a distinct objective, noise schedule, prediction target, and
   sampler with independent tests. Record these choices in checkpoint contracts.
 - Implement and evaluate motif clamping, classifier-free guidance, and geometry
