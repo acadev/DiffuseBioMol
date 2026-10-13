@@ -4,6 +4,7 @@ Canonical polymer slots and embedding IDs are frozen in vocabulary.json.
 No generated coordinates or external CCD mirror is required.
 """
 import json
+import io
 from pathlib import Path
 
 import numpy as np
@@ -25,19 +26,26 @@ ION_ELEMENTS = {"LI", "NA", "K", "RB", "CS", "MG", "CA", "SR", "BA", "MN",
                 "FE", "CO", "NI", "CU", "ZN", "CD", "HG", "F", "CL", "BR", "I"}
 
 
-def parse_structure(path):
+def parse_structure(path, *, file_type=None):
     """Read the first model/asymmetric unit, with deterministic first altlocs."""
     from atomworks.io import parse
     from atomworks.io.config import ParseConfig
 
     suffix = str(path).lower().removesuffix(".gz")
-    file_type = "pdb" if suffix.endswith((".pdb", ".ent")) else "cif"
+    if file_type is None:
+        file_type = "pdb" if suffix.endswith((".pdb", ".ent")) else "cif"
+    if file_type not in ("pdb", "cif"):
+        raise ValueError("file_type must be pdb or cif")
     config = ParseConfig.from_preset(
         "minimal", model=1, build_assembly=None, file_type=file_type,
         hydrogen_policy="remove", remove_waters=True,
         fix_ligands_at_symmetry_centers=False, ccd_mirror_path=None,
     )
-    atoms = parse(str(path), config=config)["asym_unit"]
+    # AtomWorks' PDB reader infers the format from the path a second time.
+    # CATH archives use extensionless domain names (for example, 12asA00),
+    # so pass their contents as a PDB text buffer instead.
+    source = io.StringIO(Path(path).read_text()) if file_type == "pdb" and not suffix.endswith((".pdb", ".ent")) else str(path)
+    atoms = parse(source, config=config)["asym_unit"]
     return atoms[0] if atoms.coord.ndim == 3 else atoms
 
 

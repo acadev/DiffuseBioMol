@@ -21,10 +21,10 @@ def _pdb_id(path):
     return name.upper() if re.fullmatch(r"[0-9][a-z0-9]{3}", name) else None
 
 
-def _prepare_one(path, chain):
+def _prepare_one(path, chain, file_type=None):
     """Parse once per source and return records in stable chain order."""
     try:
-        atoms = parse_structure(path)
+        atoms = parse_structure(path, file_type=file_type)
         counts = {}
         seen = set()
         for i in range(len(atoms)):

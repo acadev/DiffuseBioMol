@@ -35,7 +35,7 @@ class FoldCorpusTests(unittest.TestCase):
             for i, (fold, family) in enumerate(((10, 1), (10, 1), (10, 2),
                                                  (20, 1), (20, 2), (30, 1)), 1):
                 domain = f"1ab{i}A00"
-                (domains / f"{domain}.pdb").write_text(pdb_record())
+                (domains / (domain if i % 2 else f"{domain}.pdb")).write_text(pdb_record())
                 rows.append(f"{domain} 1 {fold} 1 {family} 1 1 1 1 1 4 2.000\n")
             classification = root / "cath-domain-list.txt"
             classification.write_text("# CATH list\n" + "".join(rows))
@@ -82,7 +82,7 @@ class FoldCorpusTests(unittest.TestCase):
             root = Path(tmp)
             domains = root / "domains"
             domains.mkdir()
-            (domains / "1abcA00.pdb").write_text(pdb_record())
+            (domains / "1abcA00").write_text(pdb_record())
             classification = root / "cath-domain-list.txt"
             classification.write_text("1abcA00 1 10 1 1 1 1 1 1 1 4 2.000\n"
                                       "2abcA00 1 10 1 2 1 1 1 1 1 4 2.000\n")

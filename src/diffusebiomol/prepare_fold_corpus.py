@@ -77,14 +77,14 @@ def _classifications(path, selected):
 def _results(jobs, workers):
     if workers == 1:
         for domain, path, label in jobs:
-            yield domain, path, label, _prepare_one(path, "largest")
+            yield domain, path, label, _prepare_one(path, "largest", "pdb")
         return
     with ProcessPoolExecutor(max_workers=workers) as executor:
         pending = deque()
         iterator = iter(jobs)
         for _ in range(min(len(jobs), 2 * workers)):
             domain, path, label = next(iterator)
-            pending.append((domain, path, label, executor.submit(_prepare_one, path, "largest")))
+            pending.append((domain, path, label, executor.submit(_prepare_one, path, "largest", "pdb")))
         while pending:
             domain, path, label, future = pending.popleft()
             yield domain, path, label, future.result()
@@ -92,7 +92,7 @@ def _results(jobs, workers):
             if next_job is not None:
                 next_domain, next_path, next_label = next_job
                 pending.append((next_domain, next_path, next_label,
-                    executor.submit(_prepare_one, next_path, "largest")))
+                    executor.submit(_prepare_one, next_path, "largest", "pdb")))
 
 
 def prepare_fold_corpus(domains, classification, output, *, selection=None,
@@ -113,7 +113,7 @@ def prepare_fold_corpus(domains, classification, output, *, selection=None,
         raise ValueError(f"Selection has {len(unclassified)} domains absent from the CATH classification; first: {unclassified[0]}")
     files = {}
     for path in domains.rglob("*"):
-        if not path.is_file() or path.suffix.lower() not in (".pdb", ".ent"):
+        if not path.is_file() or path.suffix.lower() not in ("", ".pdb", ".ent"):
             continue
         domain = _domain_id(path.name)
         if domain not in labels:
@@ -122,11 +122,13 @@ def prepare_fold_corpus(domains, classification, output, *, selection=None,
             raise ValueError(f"Duplicate coordinate file for {domain}: {files[domain]} and {path}")
         files[domain] = path
     missing = sorted(labels.keys() - files.keys())
+    if not files:
+        raise ValueError(f"No selected CATH coordinates found under {domains}. "
+            "The CATH archive extracts extensionless files such as dompdb/12asA00; "
+            "check the archive extraction and input directory.")
     if strict and missing:
         raise ValueError(f"Missing {len(missing)} selected CATH coordinates; first: {missing[0]}")
     jobs = [(domain, files[domain], labels[domain]) for domain in sorted(files)]
-    if not jobs:
-        raise ValueError("No selected CATH domain PDB files found")
     parser_version = version("atomworks")
     output.mkdir(parents=True, exist_ok=False)
     entries, skipped = [], []

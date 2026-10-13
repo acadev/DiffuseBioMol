@@ -8,15 +8,17 @@ Download `cath-domain-list.txt`, one `cath-dataset-nonredundant-S20` or `S40`
 `.list`, and its matching `.pdb.tgz` from the same CATH release. Pin the release
 URL and retain these input files. Extract the archive on cluster scratch storage;
 the input directory must contain the **CATH-chopped domain PDBs**, not whole-entry
-PDB structures. For example:
+PDB structures. CATH's archive members are extensionless files such as
+`dompdb/12asA00`; the preparer recognizes these names and reads them as PDB.
+For S20:
 
 ```sh
-mkdir -p /scratch/cath-s40-domains
-tar -xzf /scratch/cath-dataset-nonredundant-S40.pdb.tgz -C /scratch/cath-s40-domains
-diffusebiomol-prepare-folds /scratch/cath-s40-domains \
-  /scratch/cath-domain-list.txt /scratch/dbm-cath-s40 \
-  --selection /scratch/cath-dataset-nonredundant-S40.list \
-  --workers 16 --min-residues 40 --max-residues 512 --strict
+mkdir -p /scratch/cath-s20-domains
+tar -xzf /scratch/cath-dataset-nonredundant-S20.pdb.tgz -C /scratch/cath-s20-domains
+diffusebiomol-prepare-folds /scratch/cath-s20-domains \
+  /scratch/cath-domain-list.txt /scratch/dbm-cath-s20 \
+  --selection /scratch/cath-dataset-nonredundant-S20.list \
+  --workers 16 --strict
 ```
 
 `--strict` fails for missing coordinates or parse/filter skips, with a manifest
@@ -27,6 +29,10 @@ linear files; no pairwise structure comparisons are performed. Benchmark a
 small extracted subset before choosing worker count and storage layout. The
 current schema writes one JSON file per domain, so filesystem metadata traffic
 and AtomWorks parsing should be measured before processing the full collection.
+If you use `--min-residues` or `--max-residues` to filter domains, omit
+`--strict`: genuine S20 domains fall outside a 40–512-residue range, so the
+filtered corpus is intentionally incomplete. Use a new output directory for
+each preparation attempt.
 
 Each domain entry includes `domain_id`, CATH topology (`fold_id`, C.A.T),
 homologous superfamily (`superfamily_id`, C.A.T.H), S35 family, resolution,
@@ -38,7 +44,7 @@ it does not by itself make a homology-disjoint validation split.
 Train with a superfamily holdout and uniform fold draws:
 
 ```sh
-diffusebiomol-train /scratch/dbm-cath-s40 runs/cath-s40 \
+diffusebiomol-train /scratch/dbm-cath-s20 runs/cath-s20 \
   --split-group superfamily --fold-sampling uniform_fold \
   --presentations-per-epoch 20000 --max-residues 256 \
   --max-atoms 8192 --batch-size 1 --device cuda --epochs 10
